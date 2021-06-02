@@ -16,6 +16,7 @@ router.post('/upload',
             const book = new Book(req.file) //创建一个book对象，这个实例在执行时会进行执行models/book.js中的constructor代码
                 // console.log(book)
             book.parse().then(book => {
+                console.log('book', book)
                 new Result('上传电子书成功').success(res)
             }).catch(err => {
                 next(boom.badImplementation(err))

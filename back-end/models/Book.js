@@ -30,7 +30,7 @@ class Book {
         const suffix = mimetype === MIME_TYPE_EPUB ? '.epub' : '' //加后缀
 
         const oldBookPath = path //原有的文件路径。就是打印出来的
-        const bookPath = `${destination}/${filename}.${suffix}` //因为原来的路径没有.epub后缀，所以这里是加上后缀后的新路径
+        const bookPath = `${destination}/${filename}${suffix}` //因为原来的路径没有.epub后缀，所以这里是加上后缀后的新路径
 
         const url = `${UPLOAD_URL}/book/${filename}${suffix}` //这是电子书的下载url链接
         const unzipPath = `${UPLOAD_PATH}/unzip/${filename}` //这是电子书解压后的文件夹路径
@@ -41,7 +41,7 @@ class Book {
         if (fs.existsSync(oldBookPath) && !fs.existsSync(bookPath)) {
             fs.renameSync(oldBookPath, bookPath) //重命名成 带有.epub结尾的书籍
         }
-        this.filename = filename //是文件名 无后缀
+        this.fileName = filename //是文件名 无后缀
         this.path = `/book/${filename}${suffix}` //epub文件相对路径
         this.unzipPath = `/unzip/${filename}` //epub解压后的相对路径
         this.filePath = this.path //起一个filePath的别名 更好辨认
@@ -51,6 +51,7 @@ class Book {
         this.publisher = ''
         this.contents = []
         this.cover = '' //封面图片的下载链接
+        this.coverPath = '' //封面图片路径
         this.category = -1 //电子书的分类ID
         this.categoryText = ''
         this.language = ''
@@ -69,14 +70,48 @@ class Book {
                 reject(new Error('电子书不存在'))
             }
             const epub = new Epub(bookPath)
-            epub.on('error', err => {
+            epub.on('error', err => { //在epub.js中 封装好的 emit一个error事件，包括 打印错误时显示的信息
                 reject(err)
             })
             epub.on('end', err => {
                 if (err) {
                     reject(err)
                 } else {
-                    console.log(epub.metadata)
+                    // console.log('epub end', epub.manifest)
+                    const { //获取对象的方法：直接解构 出来metadata中的数据
+                        language,
+                        creator,
+                        creatorFileAs,
+                        title,
+                        cover,
+                        publisher
+                    } = epub.metadata
+                    if (!title) {
+                        reject(new Error('图书标题为空'))
+                    } else {
+                        this.title = title //在上面的 createfile里做过 处理  this.title=‘’
+                        this.language = language || 'en'
+                        this.author = creator || creatorFileAs || 'unknown'
+                        this.publisher = publisher || 'unknown'
+                        this.rootFile = epub.rootFile
+
+                        const handleGetImage = (err, file, mimeType) => {
+                            if (err) {
+                                reject(err)
+                            } else {
+                                const suffix = mimeType.split('/')[1] //截取处 图片的类型
+                                const coverPath = `${UPLOAD_PATH}/img/${this.fileName}.${suffix}`
+                                const coverUrl = `${UPLOAD_URL}/img/${this.fileName}.${suffix}`
+                                fs.writeFileSync(coverPath, file, 'binary')
+                                this.coverPath = `/img/${this.fileName}.${suffix}`
+                                this.cover = coverUrl
+                                resolve(this)
+                            }
+                        }
+                        console.log('cover', cover)
+                        epub.getImage(cover, handleGetImage) //getImage方法也是在epub源码文件中的方法，传入两个参数，图片id和回调函数
+                        resolve(this) //将当前的book实体传入进去，尽可以在book.js中的 上传成功的 then里面获取到
+                    }
                     resolve()
                 }
             })
