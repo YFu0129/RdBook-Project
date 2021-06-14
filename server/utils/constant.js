@@ -1,6 +1,8 @@
 const { env } = require('./env')
 const UPLOAD_PATH = env === 'dev' ? '/Users/fuyuwen/upload/admin-upload-ebook' : '/root/upload/admin-upload/ebook'
 
+const OLD_UPLOAD_URL = env === 'dev' ? 'https://bookadminproject.com/book/res/img' : 'https://www.bookadminproject.com/book/res/img'
+
 const UPLOAD_URL = env === 'dev' ? 'https://bookadminproject.com/admin-upload-ebook' : 'https://www.bookadminproject.com/admin-upload-ebook'
 
 module.exports = {
@@ -12,6 +14,7 @@ module.exports = {
     PRIVATE_KEY: 'admin_imooc_node_test_youbaobao_xyz', //自己去写密钥---jwt网址，这里用的跟老师的一样
     JWT_EXPIRED: 60 * 60, //时间是秒级的， 先指定一个小时
     UPLOAD_PATH,
+    OLD_UPLOAD_URL,
     UPLOAD_URL,
     MIME_TYPE_EPUB: 'application/epub+zip'
 }
